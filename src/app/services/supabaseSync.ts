@@ -1,46 +1,52 @@
 // Supabase Real-time Sync Service
-// This will activate automatically when Supabase is connected
+// Automatically activates when Supabase is connected from Make settings
 
 interface SyncData {
   id: string;
   mode: string;
-  data: any;
+  studyEntries: any[];
+  goals: any[];
+  chapters: any[];
+  tasks: any[];
+  achievements: any[];
+  userLevel: number;
+  userXP: number;
+  streak: number;
   timestamp: string;
-  userId?: string;
 }
 
-// Check if Supabase files exist
+// Check if Supabase is connected
 export const isSupabaseConnected = (): boolean => {
   try {
-    // This will be true when user connects Supabase from settings
-    // The files will be auto-generated: supabase/functions/server/kv_store.tsx
-    return false; // Will check for actual files when Supabase is connected
+    // Check if Supabase files exist (auto-generated when user connects)
+    // Files: supabase/functions/server/kv_store.tsx, utils/supabase/info.tsx
+    return false; // Will be true when Supabase is connected from settings
   } catch {
     return false;
   }
 };
 
-// Sync data to Supabase
+// Sync all data to cloud
 export const syncToCloud = async (mode: string, data: any): Promise<boolean> => {
   if (!isSupabaseConnected()) {
-    console.log('Supabase not connected, skipping cloud sync');
+    console.log('📦 Supabase not connected - using local storage');
     return false;
   }
 
   try {
-    // When Supabase is connected, this will use the KV store
+    // When Supabase is connected, use KV store
     // const { kv } = await import('../../../supabase/functions/server/kv_store');
 
     const syncData: SyncData = {
       id: `${mode}_${Date.now()}`,
       mode,
-      data,
+      ...data,
       timestamp: new Date().toISOString(),
     };
 
     // await kv.set(`study_data_${mode}`, syncData);
 
-    console.log('Data synced to cloud:', syncData);
+    console.log('☁️ Data synced to cloud:', syncData);
     return true;
   } catch (error) {
     console.error('Cloud sync failed:', error);
@@ -48,7 +54,7 @@ export const syncToCloud = async (mode: string, data: any): Promise<boolean> => 
   }
 };
 
-// Get data from Supabase
+// Get data from cloud
 export const syncFromCloud = async (mode: string): Promise<any | null> => {
   if (!isSupabaseConnected()) {
     return null;
@@ -69,33 +75,30 @@ export const syncFromCloud = async (mode: string): Promise<any | null> => {
 // Subscribe to real-time updates
 export const subscribeToUpdates = (mode: string, callback: (data: any) => void) => {
   if (!isSupabaseConnected()) {
-    return () => {}; // Return empty unsubscribe function
+    return () => {}; // Empty unsubscribe
   }
 
-  // When Supabase is connected, set up real-time subscription
-  // This will listen for changes and call the callback
-
-  console.log(`Subscribed to ${mode} updates`);
+  // When connected, set up real-time subscription
+  console.log(`🔔 Subscribed to ${mode} updates`);
 
   // Return unsubscribe function
   return () => {
-    console.log(`Unsubscribed from ${mode} updates`);
+    console.log(`🔕 Unsubscribed from ${mode} updates`);
   };
 };
 
-// Initialize sync service
+// Initialize sync on app load
 export const initializeSync = async (mode: string) => {
   if (!isSupabaseConnected()) {
-    console.log('📦 Using local storage only. Connect Supabase for multi-device sync.');
-    return;
+    console.log('📦 Local mode - connect Supabase from Make settings for multi-device sync');
+    return null;
   }
 
-  console.log('☁️ Supabase connected! Real-time sync enabled.');
+  console.log('☁️ Supabase connected! Loading cloud data...');
 
-  // Auto-sync on app load
   const cloudData = await syncFromCloud(mode);
   if (cloudData) {
-    console.log('Cloud data loaded:', cloudData);
+    console.log('✅ Cloud data loaded:', cloudData);
     return cloudData;
   }
 

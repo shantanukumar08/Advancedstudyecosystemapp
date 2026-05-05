@@ -16,6 +16,7 @@ import {
 } from './ui/alert-dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import ExamModeManager from './ExamModeManager';
 
 interface SettingsPanelProps {
   setStudyEntries: (entries: any[]) => void;
@@ -172,51 +173,13 @@ export default function SettingsPanel({
           <p className="text-muted-foreground text-sm">Manage your app preferences</p>
         </div>
 
-        {/* App Mode Selection */}
+        {/* Exam Mode Manager */}
         <motion.div
           className="bg-card border border-border rounded-xl p-6 mb-6"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <div className="flex items-center gap-3 mb-4">
-            <Palette className="w-5 h-5 text-primary" />
-            <h3 className="text-lg">Study Mode</h3>
-          </div>
-          <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/30">
-            <p className="text-xs text-primary">
-              💡 Each mode saves data separately. Switch modes to track different exams independently.
-            </p>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">Select your exam preparation focus</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {['JEE', 'NEET', 'UPSC', 'Board', 'Custom'].map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setAppMode(mode)}
-                className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  appMode === mode
-                    ? 'bg-primary text-black'
-                    : 'bg-secondary/30 hover:bg-secondary/50'
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
-          {appMode === 'Custom' && (
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="custom-subjects">Custom Subjects (comma-separated)</Label>
-              <Input
-                id="custom-subjects"
-                value={customSubjects}
-                onChange={(e) => {
-                  setCustomSubjects(e.target.value);
-                  localStorage.setItem('customSubjects', e.target.value);
-                }}
-                placeholder="e.g., History, Geography, Economics"
-              />
-            </div>
-          )}
+          <ExamModeManager currentMode={appMode} onModeChange={setAppMode} />
         </motion.div>
 
         {/* Data Management */}
@@ -269,14 +232,8 @@ export default function SettingsPanel({
             </div>
 
             <Button onClick={handleAutoRestoreFromLocalStorage} variant="outline" className="w-full">
-              Restore Auto-Backup
+              Restore Local Backup
             </Button>
-          </div>
-
-          <div className="mt-4 p-3 rounded-lg bg-green-400/10 border border-green-400/30">
-            <p className="text-xs text-green-400">
-              ✅ Auto-backup runs every 5 minutes and saves to your downloads folder
-            </p>
           </div>
         </motion.div>
 
@@ -364,7 +321,7 @@ export default function SettingsPanel({
           </div>
         </motion.div>
 
-        {/* Supabase Cloud Sync Info */}
+        {/* Multi-Device Sync (Supabase) */}
         <motion.div
           className="mt-6 bg-gradient-to-br from-green-400/10 to-cyan-400/10 border border-green-400/30 rounded-xl p-6"
           initial={{ opacity: 0 }}
@@ -376,20 +333,20 @@ export default function SettingsPanel({
             <h3 className="text-lg text-green-400">Multi-Device Sync</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Enable real-time sync across all your devices by connecting Supabase
+            Enable real-time sync across all your devices by connecting Supabase from Make settings
           </p>
           <div className="space-y-2 text-sm mb-4">
             <div className="flex items-start gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2 flex-shrink-0" />
-              <span className="text-muted-foreground">One person adds entry → Everyone sees it instantly</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2 flex-shrink-0" />
-              <span className="text-muted-foreground">Access from phone, tablet, or computer</span>
+              <span className="text-muted-foreground">One device adds entry → All devices see it instantly</span>
             </div>
             <div className="flex items-start gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2 flex-shrink-0" />
               <span className="text-muted-foreground">Data backed up securely in the cloud</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2 flex-shrink-0" />
+              <span className="text-muted-foreground">Access from phone, tablet, or computer</span>
             </div>
           </div>
           <div className="p-4 bg-background/50 rounded-lg border border-border">
@@ -413,7 +370,7 @@ export default function SettingsPanel({
           className="mt-6 bg-gradient-to-br from-primary/5 to-accent/5 border border-border rounded-xl p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
         >
           <h3 className="text-lg mb-4 flex items-center gap-2">
             <Settings className="w-5 h-5 text-primary" />
@@ -423,27 +380,45 @@ export default function SettingsPanel({
             <div className="flex items-start gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
               <div>
-                <span className="text-primary font-medium">Back Button Navigation:</span>
+                <span className="text-primary font-medium">Chapter Tracker:</span>
                 <span className="text-muted-foreground ml-1">
-                  Press back to navigate between pages within the app
+                  Track chapters by team with book page details
                 </span>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0" />
               <div>
-                <span className="text-accent font-medium">Separate Mode Data:</span>
+                <span className="text-accent font-medium">Pomodoro Timer:</span>
                 <span className="text-muted-foreground ml-1">
-                  Each study mode (JEE, NEET, Boards, etc.) has completely separate data storage
+                  25-min focus sessions with automatic break reminders
                 </span>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2 flex-shrink-0" />
               <div>
-                <span className="text-green-400 font-medium">Offline First:</span>
+                <span className="text-green-400 font-medium">Task & Deadline Tracker:</span>
                 <span className="text-muted-foreground ml-1">
-                  All data is saved locally in your browser
+                  Priority-based task management with countdown alerts
+                </span>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 mt-2 flex-shrink-0" />
+              <div>
+                <span className="text-yellow-400 font-medium">Spaced Repetition:</span>
+                <span className="text-muted-foreground ml-1">
+                  Scientific revision system (1, 3, 7, 14, 30 days)
+                </span>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2 flex-shrink-0" />
+              <div>
+                <span className="text-blue-400 font-medium">Offline First:</span>
+                <span className="text-muted-foreground ml-1">
+                  All data saved locally, works without internet
                 </span>
               </div>
             </div>
@@ -455,7 +430,7 @@ export default function SettingsPanel({
           className="mt-6 bg-card border border-border rounded-xl p-6 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.6 }}
         >
           <h3 className="text-lg mb-2">Study Command Center</h3>
           <p className="text-sm text-muted-foreground mb-1">Version 1.0.0</p>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Plus, Zap, BookOpen, Clock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,9 +15,10 @@ interface StudyEntryProps {
   addXP: (amount: number) => void;
   setStreak: (streak: number) => void;
   streak: number;
+  appMode: string;
 }
 
-export default function StudyEntry({ studyEntries, setStudyEntries, addXP, setStreak, streak }: StudyEntryProps) {
+export default function StudyEntry({ studyEntries, setStudyEntries, addXP, setStreak, streak, appMode }: StudyEntryProps) {
   const [quickMode, setQuickMode] = useState(true);
   const [formData, setFormData] = useState({
     subject: '',
@@ -34,7 +35,41 @@ export default function StudyEntry({ studyEntries, setStudyEntries, addXP, setSt
     focusScore: '',
   });
 
-  const subjects = ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'English', 'Other'];
+  // Load subject structure from SubjectManagement
+  const [subjectStructure, setSubjectStructure] = useState<any[]>([]);
+  const [availableChapters, setAvailableChapters] = useState<any[]>([]);
+  const [availableTopics, setAvailableTopics] = useState<any[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`${appMode}_subjectStructure`);
+    if (saved) {
+      setSubjectStructure(JSON.parse(saved));
+    }
+  }, [appMode]);
+
+  // Update chapters when subject changes
+  useEffect(() => {
+    if (formData.subject && subjectStructure.length > 0) {
+      const selectedSubject = subjectStructure.find(s => s.name === formData.subject);
+      setAvailableChapters(selectedSubject?.chapters || []);
+      setFormData(prev => ({ ...prev, chapter: '', topic: '' }));
+    }
+  }, [formData.subject, subjectStructure]);
+
+  // Update topics when chapter changes
+  useEffect(() => {
+    if (formData.chapter && availableChapters.length > 0) {
+      const selectedChapter = availableChapters.find(c => c.name === formData.chapter);
+      setAvailableTopics(selectedChapter?.topics || []);
+      setFormData(prev => ({ ...prev, topic: '' }));
+    }
+  }, [formData.chapter, availableChapters]);
+
+  // Get subjects list (from subject structure or fallback to custom subjects)
+  const subjects = subjectStructure.length > 0
+    ? subjectStructure.map(s => s.name)
+    : (localStorage.getItem('customSubjects')?.split(',').map((s) => s.trim()).filter(Boolean) ||
+       ['Physics', 'Chemistry', 'Mathematics', 'Biology', 'English', 'Other']);
 
   const handleQuickAdd = () => {
     if (!formData.subject) {
@@ -153,22 +188,52 @@ export default function StudyEntry({ studyEntries, setStudyEntries, addXP, setSt
             <>
               <div className="space-y-2">
                 <Label htmlFor="chapter">Chapter *</Label>
-                <Input
-                  id="chapter"
-                  value={formData.chapter}
-                  onChange={(e) => setFormData({ ...formData, chapter: e.target.value })}
-                  placeholder="e.g., Thermodynamics"
-                />
+                {availableChapters.length > 0 ? (
+                  <Select value={formData.chapter} onValueChange={(value) => setFormData({ ...formData, chapter: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select chapter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableChapters.map((chapter) => (
+                        <SelectItem key={chapter.id} value={chapter.name}>
+                          {chapter.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="chapter"
+                    value={formData.chapter}
+                    onChange={(e) => setFormData({ ...formData, chapter: e.target.value })}
+                    placeholder="e.g., Thermodynamics (or add from Subject Manager)"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="topic">Topic</Label>
-                <Input
-                  id="topic"
-                  value={formData.topic}
-                  onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                  placeholder="e.g., First Law of Thermodynamics"
-                />
+                {availableTopics.length > 0 ? (
+                  <Select value={formData.topic} onValueChange={(value) => setFormData({ ...formData, topic: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select topic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTopics.map((topic) => (
+                        <SelectItem key={topic.id} value={topic.name}>
+                          {topic.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="topic"
+                    value={formData.topic}
+                    onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                    placeholder="e.g., First Law (or add from Subject Manager)"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">

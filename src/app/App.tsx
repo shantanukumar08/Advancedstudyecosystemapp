@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, Home, BookOpen, RotateCcw, Target, Calendar as CalendarIcon, BarChart3, Brain, Trophy, FileText, Settings, Download } from 'lucide-react';
+import { Menu, X, Home, BookOpen, RotateCcw, Target, Calendar as CalendarIcon, BarChart3, Brain, Trophy, FileText, Settings, Download, Clock, CheckSquare, BookMarked, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'sonner';
 import Dashboard from './components/Dashboard';
@@ -13,7 +13,11 @@ import Achievements from './components/Achievements';
 import NotesAndMistakes from './components/NotesAndMistakes';
 import SettingsPanel from './components/SettingsPanel';
 import ExportData from './components/ExportData';
+import ChapterTracker from './components/ChapterTracker';
+import PomodoroTimer from './components/PomodoroTimer';
+import TaskTracker from './components/TaskTracker';
 import AutoSync from './components/AutoSync';
+import SubjectManagement from './components/SubjectManagement';
 
 interface StudyEntry {
   id: string;
@@ -60,6 +64,17 @@ export default function App() {
   const [userLevel, setUserLevel] = useState(1);
   const [userXP, setUserXP] = useState(0);
   const [streak, setStreak] = useState(0);
+
+  // Load chapters and tasks for sync/export
+  const [chapters] = useState<any[]>(() => {
+    const saved = localStorage.getItem(`${appMode}_chapters`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [tasks] = useState<any[]>(() => {
+    const saved = localStorage.getItem(`${appMode}_tasks`);
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Get mode-specific localStorage keys
   const getStorageKey = (key: string) => `${appMode}_${key}`;
@@ -130,6 +145,10 @@ export default function App() {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'study', label: 'Study Entry', icon: BookOpen },
+    { id: 'subjects', label: 'Subject Manager', icon: Layers },
+    { id: 'chapters', label: 'Chapter Tracker', icon: BookMarked },
+    { id: 'tasks', label: 'Tasks & Deadlines', icon: CheckSquare },
+    { id: 'pomodoro', label: 'Pomodoro Timer', icon: Clock },
     { id: 'revision', label: 'Revision System', icon: RotateCcw },
     { id: 'goals', label: 'Goals', icon: Target },
     { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
@@ -186,13 +205,23 @@ export default function App() {
       userXP,
       appMode,
       setAppMode: handleModeChange,
+      chapters,
+      tasks,
     };
 
     switch (currentView) {
       case 'dashboard':
         return <Dashboard {...props} />;
       case 'study':
-        return <StudyEntry {...props} />;
+        return <StudyEntry {...props} appMode={appMode} />;
+      case 'subjects':
+        return <SubjectManagement appMode={appMode} />;
+      case 'chapters':
+        return <ChapterTracker appMode={appMode} />;
+      case 'tasks':
+        return <TaskTracker appMode={appMode} />;
+      case 'pomodoro':
+        return <PomodoroTimer />;
       case 'revision':
         return <RevisionSystem {...props} />;
       case 'goals':
@@ -368,6 +397,9 @@ export default function App() {
       <AutoSync
         studyEntries={studyEntries}
         goals={goals}
+        chapters={chapters}
+        tasks={tasks}
+        achievements={achievements}
         appMode={appMode}
         userLevel={userLevel}
         userXP={userXP}
